@@ -1,0 +1,59 @@
+# The pair setting: Strands Decider judges routing Qwen2.5-1.5B-Instruct (nano-jev's top 2 passages) and
+# Qwen2.5-7B-Instruct (all 10 paragraphs) on HotpotQA's SLR split (stair_common 0.3.0): router_train = slr-train (4,814),
+# calib = slr-val (1,110), test = slr-test (1,481), all dev questions. Labels, curves and AIQ use the standard lenient
+# ruler; cost is AgentTTS Table 5's price per answering call (Qwen2.5-7B 10; Qwen2.5-1.5B 0.5 by the same formula), with
+# each judge's own calls priced by stair_common.cost.budget beside it. The settings are the published judges'.
+#   uv run judge train --plan configs/pair.toml --data-dir <HotpotQA parquet dir> --out runs/pair --save-model
+#   uv run judge eval --plan configs/pair.toml --data-dir <HotpotQA parquet dir> --out runs/pair --exclude <ids>
+# `pairs.A` holds the two models' cached answers (router_train / calib / test parquet), from your own runs of them:
+# this repository does not generate them. --exclude takes the dev questions nano-jev saw (the clean test set).
+metric = "lenient"
+cost = "table5"
+tau = 0.5
+max_drop = 0.01
+seeds = [0, 1, 2]
+
+[pairs]
+A = "runs/pair-a"
+
+[split_data]  # every split of the SLR scheme is dev
+router_train = "distractor_validation.parquet"
+calib = "distractor_validation.parquet"
+test = "distractor_validation.parquet"
+
+[train]  # the base settings; each judge overrides its LoRA's
+epochs = 3
+lr = 5e-5
+weight_decay = 0.01
+warmup = 0.06
+batch_size = 16
+max_length = 512
+dev_fraction = 0.1
+
+[[judges]]
+inputs = "qp"
+label = "large-helps"
+init = "StrandsAgents/strands-decider-2B-hobson-v21"
+train_pair = "A"
+train = { epochs = 2, lr = 1e-4, micro_batch = 4 }
+
+[[judges]]
+inputs = "qpa"
+label = "large-helps"
+init = "StrandsAgents/strands-decider-2B-hobson-v21"
+train_pair = "A"
+train = { epochs = 2, lr = 1e-4, micro_batch = 4 }
+
+[[judges]]
+inputs = "qp"
+label = "large-helps"
+init = "StrandsAgents/strands-decider-E4B-gemma4-v1-2610"
+train_pair = "A"
+train = { epochs = 2, lr = 1e-4, micro_batch = 2 }
+
+[[judges]]
+inputs = "qpa"
+label = "large-helps"
+init = "StrandsAgents/strands-decider-E4B-gemma4-v1-2610"
+train_pair = "A"
+train = { epochs = 2, lr = 1e-4, micro_batch = 2 }

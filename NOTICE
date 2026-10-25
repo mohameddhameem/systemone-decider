@@ -1,0 +1,11 @@
+SystemOne-Decider
+Copyright 2026 mohameddhameem
+
+The published judges are fine-tuned from Strands Decider checkpoints, under the Apache License 2.0:
+- StrandsAgents/strands-decider-2B-hobson-v21, built on Qwen/Qwen3.5-2B-Base (Apache-2.0);
+- StrandsAgents/strands-decider-E4B-gemma4-v1-2610, built on google/gemma-4-E4B-it (Apache-2.0).
+
+systemone_decider/decider.py runs them through the strands-decider package
+(https://github.com/strands-labs/strands-decider, Apache-2.0).
+
+Training data: HotpotQA (CC BY-SA 4.0).

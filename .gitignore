@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+models/
+runs/
+data/
+*.safetensors
+*.bin
+*.pt
+.pytest_cache/
+build/
+*.egg-info/
+.idea/

@@ -1,0 +1,52 @@
+# The menu setting: Strands Decider judges routing the two-stage SLR menu on HotpotQA, weak first (systemone_decider.menu).
+# The SLR grid comes from configs/slr.toml (`slr fetch` first). The settings are the published judges'.
+#   uv run menu-judge train --judge decider-2b --plan configs/menu.toml --save-model   # GPU; every (inputs, seed); resumes
+#   uv run menu-judge eval --plan configs/menu.toml                                    # every judge set trained so far
+slr_plan = "configs/slr.toml"
+out = "runs/menu"
+bootstrap = 1000
+
+# The SLR setup's two fine-tuned routers, as the baselines: val scores from their run folders, test scores from
+# test_scores/.
+[[his_routers]]
+name = "SLR SFT (label)"
+val = ["sft_router5_ret", "sft_router5_qa"]
+test = ["ret_label", "qa_label"]
+
+[[his_routers]]
+name = "SLR SFT (label) + reward"
+val = ["sft_router5_ret", "reward_train_qa"]
+test = ["ret_label", "qa_reward"]
+
+# Judge sets: one GPU job each, evaluated together.
+[[judges]]
+name = "decider-2b"
+judge_dir = "judge-decider-2b"
+init = "StrandsAgents/strands-decider-2B-hobson-v21"
+inputs = ["qp", "qpa"]
+seeds = [0, 1, 2]
+[judges.train]
+epochs = 2
+lr = 1e-4
+weight_decay = 0.01
+warmup = 0.06
+batch_size = 16
+micro_batch = 4
+max_length = 512        # unused by the decider: it keeps its own window
+dev_fraction = 0.1
+
+[[judges]]
+name = "decider-e4b"
+judge_dir = "judge-decider-e4b"
+init = "StrandsAgents/strands-decider-e4b-gemma4-v1-2610"
+inputs = ["qp", "qpa"]
+seeds = [0, 1, 2]
+[judges.train]
+epochs = 2
+lr = 1e-4
+weight_decay = 0.01
+warmup = 0.06
+batch_size = 16
+micro_batch = 2         # micro-batch 4 does not fit the E4B in an L40S's 44 GB
+max_length = 512
+dev_fraction = 0.1

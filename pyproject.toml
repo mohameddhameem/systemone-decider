@@ -1,0 +1,54 @@
+[project]
+name = "systemone-decider"
+version = "0.1.0"
+description = "Strands Decider judges that route questions between a weak and a strong LLM, at one stage or two"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.0",
+    "pyarrow>=15",
+    "scikit-learn>=1.5",
+    "scipy>=1.11",
+    "torch>=2.4",
+    "transformers>=4.45",
+    "huggingface_hub>=0.25",
+    # the commit the judges were trained with: Gemma 4 support is not in the PyPI 0.1.0 release. `cuda` adds the
+    # Qwen3.5 torso's fast kernels (flash-linear-attention), on Linux only.
+    "strands-decider[cuda] @ git+https://github.com/strands-labs/strands-decider@6039cf8b64c6074e75804000c07ac3d4cce795f7 ; sys_platform == 'linux'",
+    "strands-decider @ git+https://github.com/strands-labs/strands-decider@6039cf8b64c6074e75804000c07ac3d4cce795f7 ; sys_platform != 'linux'",
+    # the SLR split, the standard lenient ruler and Table 5 prices (a direct reference: it is not on PyPI)
+    "stair-common @ git+https://github.com/mohameddhameem/STAIR.git@00ee140c323159619b471253502d2e6537f83dde#subdirectory=common",
+]
+
+[project.optional-dependencies]
+data = ["datasets>=3.0"]  # prepare-hotpotqa: the HotpotQA distractor files, from the Hugging Face Hub
+
+[project.scripts]
+prepare-hotpotqa = "systemone_decider.prepare_hotpotqa:main"  # data/hotpotqa/distractor_{train,validation}.parquet
+judge = "systemone_decider.judge:main"            # the pair setting: train, score and evaluate
+menu-judge = "systemone_decider.menu:main"        # the menu setting: train and evaluate
+slr = "systemone_decider.slr:main"                # fetch and verify the SLR grid
+decider-smoke = "systemone_decider.decider:main"  # the judge wrapper against the strands-decider engine
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+# CUDA 12.6 wheels, with a CPU fallback.
+[tool.uv.sources]
+torch = { index = "pytorch-cu126" }
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["systemone_decider"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

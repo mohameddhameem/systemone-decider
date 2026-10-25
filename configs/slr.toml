@@ -1,0 +1,64 @@
+# The Stage-Level Routing (SLR) setup on HotpotQA (stair_common 0.3.0): its Config B grid, split, labels and routers'
+# scores, read from the public STAIR repo at a pinned commit, where they sit under the setup author's folder.
+#   uv run slr fetch    # once, on a machine with internet (downloads only)
+#   uv run slr verify   # the ruler, the split and the setup's certified rows
+#   uv run slr ladder   # always-* paths and the oracle on slr-val and slr-test
+repo = "mohameddhameem/STAIR"
+commit = "5b69ccef5bbb30d4cc5606f45a16695466770e21"   # tag slr-config-b-2026-10-19: not on main, the tag keeps it
+out = "runs/slr"                                        # the fetched files, at their repo paths (git ignores runs/)
+results = "results/slr"
+dev = "data/hotpotqa/distractor_validation.parquet"     # HotpotQA dev in file order: the setup's positions (`idx`)
+
+# path in the repo -> sha256 of the file at `commit`
+[files]
+"jonathan/lab_package/splits.json" = "4ec686a411194467d234938c6d16ce80d11cc8af9306b613ce5bc6cd5035da22"
+"jonathan/runs/config_b/router_data_standard.jsonl" = "f917cd41d170d7af2dc46c052db4728fce74c4ca8312b3450c746f27b53d97f9"
+"jonathan/runs/config_b/qa_weak.jsonl" = "6b54e3c0304d5266f200ffc71816014e041c36800b335c9d9e1c23b08e8bd9a8"
+"jonathan/runs/config_b/qa_strong.jsonl" = "c6dae04993564ff27f1996d54c696a71e86b5fcf17afb8723c5f4d9178bdd742"
+"jonathan/runs/config_b/retr_weak.jsonl" = "50296feb5f28a8c5b68dca34198415d7e41e0d0c617a608552a4cb42ccb61b7a"
+"jonathan/runs/config_b/retr_strong.jsonl" = "be53e8afe8bce8e158aec3a500a402cce32b2ba377df99bbd941a9c14371aeca"
+"jonathan/runs/config_b/meta_retr_weak.jsonl" = "b92f1cb1fd18866981323c9aa96379d4cfa321ff919a7ffe41683dd7b744eccc"
+"jonathan/runs/config_b/meta_retr_strong.jsonl" = "70edc0b38b417832df4bb900acd9924ac82a8c902c772cf666b328fcfa5bc16b"
+"jonathan/runs/config_b/meta_qa_weak.jsonl" = "4a10e3a21a43e78f85ff551bcdbe9ab7365dc04177ee339f255c1cfcf35cf005"
+"jonathan/runs/config_b/meta_qa_strong.jsonl" = "b2f9388d9ad51c0d5ec897de743bd08f2bce88f745372d4a1677772f7a4490d6"
+"jonathan/runs/config_b/ret_labels/ret_labels.jsonl" = "6bbff27ed87cdd66ea085441709c300bcab559509cd09b9a9b4571e6086b925d"
+"jonathan/runs/config_b/qa_labels/qa_labels.jsonl" = "f30a1fe005b20d8ad14e11e667be2747f8bda4bb4341afbd5ceb7b7f18a5fd43"
+"jonathan/runs/config_b/test_scores/ret_label.jsonl" = "a612f480bcc2a1a4bcf25c9446981e81f16d975f5d60050c58eb7231f2f35006"
+"jonathan/runs/config_b/test_scores/ret_reward.jsonl" = "b399e599aaf72fc571f4dec9a5eee0c8f6b43a0562349a2d7983b91b0398d036"
+"jonathan/runs/config_b/test_scores/qa_label.jsonl" = "e6637580731f8dc760f00d0503c2cb9325657ffaabe1db43f267dbd7ccf3f878"
+"jonathan/runs/config_b/test_scores/qa_reward.jsonl" = "7366bf5e867f895fb3e7e62fd110852a9eb1df915bc77452847cb8caa442f291"
+"jonathan/runs/config_b/sft_router5_ret/val_scores.jsonl" = "806110c0423f944634cadb873975d0427e4bbf793f7d29c174743545606e2a24"
+"jonathan/runs/config_b/sft_router5_qa/val_scores.jsonl" = "3aa57d47b9a0f5eba2366b0d2292156c31ef035ce40bc54cc579cdded78fad36"
+"jonathan/runs/config_b/reward_train_ret/val_scores.jsonl" = "30e6db6d1325cf11ae0e1e2547a632d0b6f4bfe90d0d447da93495e6bb0168fc"
+"jonathan/runs/config_b/reward_train_qa/val_scores.jsonl" = "63d169ea64c5e724baff53503c0d24eb385c18bb1065a732ffc20e14025e565a"
+"jonathan/lab_package/router_prompts.py" = "b9eebc8623ff6960f6e87c02b300c11dc523a8e05a7dab6517e84e987442af19"
+
+# The setup's certified sealed-test rows. `verify` re-selects each router's thresholds on slr-val with the setup's rule
+# (`peak` or `parity`) from the routers' val scores (`val` = [retrieval, answering] run folders), checks they are the
+# ones it froze (t = [retrieval, answer under weak retrieval, under strong]), and replays them on slr-test from
+# test_scores.
+[[certified]]
+name = "always-strong"
+path = "SS"
+lenient = 76.77
+price = 929.0
+
+[[certified]]
+name = "SLR SFT (label)"
+ret = "ret_label"
+qa = "qa_label"
+val = ["sft_router5_ret", "sft_router5_qa"]
+rule = "peak"
+t = [0.95, 1.00, 1.00]
+lenient = 76.70
+price = 834.8
+
+[[certified]]
+name = "SLR SFT (label) + reward"
+ret = "ret_label"
+qa = "qa_reward"
+val = ["sft_router5_ret", "reward_train_qa"]
+rule = "parity"
+t = [0.80, 0.55, 0.60]
+lenient = 75.96
+price = 664.7
