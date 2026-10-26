@@ -8,7 +8,8 @@ run is held to 1e-2. The check also counts the routing decisions that flip at th
     uv run python scripts/check_scores.py --org <org> [--only pair|menu] [--device cuda|cpu]
 
 The pair needs models/pair/ and the HotpotQA parquet files (its passages are rebuilt from the dataset, as in training);
-the menu needs models/menu/ and the SLR files (`slr fetch`). Results go to results/score_check.json.
+the menu needs models/menu/ and the SLR files (`slr fetch`), and passes each retriever's raw output, as a user does.
+Results go to results/score_check.json.
 """
 
 import argparse
@@ -74,26 +75,39 @@ def check_pair(org: str, data_dir: Path, device: str | None) -> list[dict]:
     return out
 
 
+def retriever_outputs(plan: dict, idx) -> dict[str, list[str]]:
+    """Each retriever's output per question, as a user passes it; the items cut it to its selection once, as training
+    did. menu.load's selections are already cut, and cutting again differs where an output repeats "Selected
+    references:" (24 weak outputs and 2 strong ones on test)."""
+    slr_plan = tomllib.loads(Path(plan["slr_plan"]).read_text(encoding="utf-8"))
+    root = Path(slr_plan["out"]) / slr.GRID
+    out = {}
+    for x in "WS":
+        raw = {r["k"]: r["v"] for r in slr.read_jsonl(root / f"retr_{slr.BRANCH[x]}.jsonl")}
+        out[x] = [str(raw[str(i)]) for i in idx]
+    return out
+
+
 def check_menu(org: str, device: str | None) -> list[dict]:
     plan = tomllib.loads((ROOT / "configs" / "menu.toml").read_text(encoding="utf-8"))
     df = menu.load(plan)
     test = df[df["split"] == "test"].reset_index(drop=True)
-    q = test["question"].tolist()
-    built = {"ret": [retrieval_item(a, s) for a, s in zip(q, test["sel_W"])]}
+    q, raw = test["question"].tolist(), retriever_outputs(plan, test["idx"])
+    built = {"ret": [retrieval_item(a, s) for a, s in zip(q, raw["W"])]}
     out = []
     for size in release.SIZES:
         for inputs in release.INPUTS:
             for x in "WS":  # the weak answer under retrieval x is path xW's
                 built[f"qa_{x}"] = [answer_item(a, s, inputs, w) for a, s, w in
-                                    zip(q, test[f"sel_{x}"], test[f"answer_{x}W"])]
+                                    zip(q, raw[x], test[f"answer_{x}W"])]
             for seed, path, sub in folders(org, "menu", size, inputs):
                 router = MenuRouter.from_pretrained(path, subfolder=sub, device=device)
                 saved = pd.read_parquet(release.seed_folder("menu", size, inputs, seed) / "test.parquet")
                 saved = saved.set_index("idx").loc[test["idx"]]
                 ours = {k: router.judge.probabilities(its)[0][:, 0] for k, its in built.items()}  # P(yes)
                 diff = max(float(np.abs(ours[k] - saved[k].to_numpy()).max()) for k in ours)
-                spot = [router.p_weak_retrieval(q[i], test["sel_W"][i]) - saved["ret"].iloc[i] for i in range(SPOT)]
-                spot += [router.p_weak_answer(q[i], test["sel_S"][i], test["answer_SW"][i]) - saved["qa_S"].iloc[i]
+                spot = [router.p_weak_retrieval(q[i], raw["W"][i]) - saved["ret"].iloc[i] for i in range(SPOT)]
+                spot += [router.p_weak_answer(q[i], raw["S"][i], test["answer_SW"][i]) - saved["qa_S"].iloc[i]
                          for i in range(SPOT)]
                 t = router.thresholds
                 route = lambda s: slr.route(s["ret"], {"W": s["qa_W"], "S": s["qa_S"]}, t)  # noqa: E731
@@ -123,7 +137,7 @@ def main() -> None:
     tol, worst = TOLERANCE[device], max(r["max_abs_diff"] for r in runs)
     summary = {"device": device, "tolerance": tol, "max_abs_diff": worst,
                "max_decisions_flipped": max(r["decisions_flipped"] for r in runs), "runs": runs}
-    (ROOT / "results" / "score_check.json").write_text(json.dumps(summary, indent=1), encoding="utf-8")
+    (ROOT / "results" / "score_check.json").write_text(json.dumps(summary, indent=1), encoding="utf-8", newline="\n")
     if worst >= tol:
         sys.exit(f"score check failed on {device}: max diff {worst:.2e} >= {tol:g}")
     print(f"score check passed on {device}: max diff {worst:.2e} < {tol:g} over {len(runs)} folders; "

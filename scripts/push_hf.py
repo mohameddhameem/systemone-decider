@@ -313,7 +313,7 @@ def stage_weights(stage: Path, setting: str, size: str, inputs: str, report: dic
             card |= {"options": ["small model", "large model"], "threshold": pair_threshold(src, calib)}
         else:
             card |= {"options": ["yes", "no"], "thresholds": menu_thresholds(report, grid, size, inputs, seed)}
-        (dst / "systemone.json").write_text(json.dumps(card, indent=1))
+        (dst / "systemone.json").write_text(json.dumps(card, indent=1), encoding="utf-8", newline="\n")
 
 
 def main() -> None:
@@ -342,7 +342,9 @@ def main() -> None:
                 stage.mkdir(parents=True)
                 if not args.cards_only:
                     stage_weights(stage, setting, size, inputs, report, calib, grid)
-                (stage / "README.md").write_text(render(args.org, size, inputs, report, clean), encoding="utf-8")
+                # LF on every OS, so a staging is byte-identical wherever it runs (check_scores.py's job compares them)
+                (stage / "README.md").write_text(render(args.org, size, inputs, report, clean), encoding="utf-8",
+                                                 newline="\n")
                 print(f"{repo}: staged in {stage}")
                 if args.push:
                     from huggingface_hub import HfApi

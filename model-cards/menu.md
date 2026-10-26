@@ -78,7 +78,14 @@ branch = router.retrieval(question, weak_selection)          # "weak" or "strong
 answerer = router.answer(question, selection, branch{weak_answer_arg})   # under that branch's selected passages
 ```
 
-The judge runs the Strands Decider's {size_name} torso, so a GPU is needed for useful speed.
+A selection is the retriever's output, uncut: its "[k] title: text" references, after any "Query: … Selected
+references:" lines. The judge keeps what follows the first "Selected references:", as training did. The judge runs the
+Strands Decider's {size_name} torso, so a GPU is needed for useful speed.
+
+On a GPU (bf16, the judge's default batches of 16), these folders reproduce every seed's saved scores on all 1,481 test
+questions (three items each) exactly. `retrieval` and `answer` score one item at a time, which pads differently: on 16
+checked items per seed of the four menu judges, the scores moved by at most 0.013, so a question right at a threshold
+can go either way.
 
 ## Training
 

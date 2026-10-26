@@ -42,7 +42,9 @@ def test_menu_items_are_the_training_items():
     ret = items.retrieval_item("Who?", "Query: who?\nSelected references: [1] A: a")
     assert ret["state"] == "[1] A: a" and ret["options"] == ("yes", "no")
     assert ret["question"] == "Do these passages hold what is needed to answer this question: Who?"
-    qpa = items.answer_item("Who?", "[1] A: a", "qpa", weak_answer="Ann.\nbecause")
+    twice = "Query: who?\nSelected references:\n[1] A: a\nSelected references:\n[2] B: b"  # 26 test outputs repeat it
+    assert items.retrieval_item("Who?", twice)["state"] == "[1] A: a\nSelected references:\n[2] B: b"  # cut once
+    qpa =items.answer_item("Who?", "[1] A: a", "qpa", weak_answer="Ann.\nbecause")
     assert qpa["state"] == "Proposed answer: Ann\n[1] A: a"
     assert qpa["question"] == "Is the proposed answer correct? Question: Who?"
     qp = items.answer_item("Who?", "Selected references:", "qp")

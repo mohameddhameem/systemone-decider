@@ -40,7 +40,9 @@ def passages_state(paragraphs: list[str]) -> str:
 
 
 def selection(text: str) -> str:
-    """A retriever's output without its "Query:" line: the selected references, "[k] title: text" per line."""
+    """A retriever's output without its "Query:" line: what follows its first "Selected references:" (all of it if
+    there is none), the selected references, "[k] title: text" per line. Training cut each output once, so pass it
+    uncut: an output that repeats "Selected references:" reads differently cut twice."""
     return text.split("Selected references:", 1)[-1].strip() or "(no passages selected)"
 
 

@@ -37,7 +37,8 @@ answerer = menu.answer(question, selection, branch, weak_answer=weak_answer)
 ```
 
 `passages` are "title: text" paragraphs in the order the weak model read them. A menu selection is the retriever's
-"[k] title: text" references. Each Hub folder's `systemone.json` names its setting, input set and thresholds; seeds 1
+output, uncut: its "[k] title: text" references, after any "Query: … Selected references:" lines; the judge keeps what
+follows the first "Selected references:", as training did. Each Hub folder's `systemone.json` names its setting, input set and thresholds; seeds 1
 and 2 load with `subfolder="seed1"` or `"seed2"`. A menu folder holds three threshold rules, all chosen on validation:
 `MenuRouter` uses `near_strong` (the cheapest point within 1% of always-strong's accuracy) unless given `rule="peak"`
 or `rule="parity"`, the SLR setup's own.

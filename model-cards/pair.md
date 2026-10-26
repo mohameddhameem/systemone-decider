@@ -71,7 +71,8 @@ p = router.p_large(question, passages{answer_arg})
 use_large = router.route(question, passages{answer_arg}) == "large"
 ```
 
-The judge runs the Strands Decider's {size_name} torso, so a GPU is needed for useful speed.
+The judge runs the Strands Decider's {size_name} torso, so a GPU is needed for useful speed. On a GPU (bf16, the
+judge's default batches of 16), these folders reproduce every seed's saved scores on all 1,481 test questions exactly.
 
 ## Training
 
