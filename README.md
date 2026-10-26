@@ -8,10 +8,15 @@ model's answer.
 Two settings, each with a 2B and an E4B judge, and each judge reading passages only (`qp`) or passages and the weak
 answer (`qpa`): eight Hugging Face repos, each with three seeds.
 
-| Setting | Decisions | Weak / strong | Repos |
-|---|---|---|---|
-| Pair | one: which model answers? | Qwen2.5-1.5B-Instruct on nano-jev's top 2 passages / Qwen2.5-7B-Instruct on all 10 | `mohameddhameem/systemone-decider-{2b,e4b}-{qp,qpa}` |
-| Menu | two, weak first: retrieval, then the answer | retrieval Qwen2.5-7B / 72B-Instruct; answer Llama-3.2-3B / 3.1-70B-Instruct | `mohameddhameem/systemone-decider-{2b,e4b}-{qp,qpa}-menu-a` |
+| Setting | Decisions | Weak / strong |
+|---|---|---|
+| Pair | one: which model answers? | Qwen2.5-1.5B-Instruct on nano-jev's top 2 passages / Qwen2.5-7B-Instruct on all 10 |
+| Menu | two, weak first: retrieval, then the answer | retrieval Qwen2.5-7B / 72B-Instruct; answer Llama-3.2-3B / 3.1-70B-Instruct |
+
+| | 2B `qp` | 2B `qpa` | E4B `qp` | E4B `qpa` |
+|---|---|---|---|---|
+| Pair | [systemone-decider-2b-qp](https://huggingface.co/mohameddhameem/systemone-decider-2b-qp) | [systemone-decider-2b-qpa](https://huggingface.co/mohameddhameem/systemone-decider-2b-qpa) | [systemone-decider-e4b-qp](https://huggingface.co/mohameddhameem/systemone-decider-e4b-qp) | [systemone-decider-e4b-qpa](https://huggingface.co/mohameddhameem/systemone-decider-e4b-qpa) |
+| Menu | [systemone-decider-2b-qp-menu-a](https://huggingface.co/mohameddhameem/systemone-decider-2b-qp-menu-a) | [systemone-decider-2b-qpa-menu-a](https://huggingface.co/mohameddhameem/systemone-decider-2b-qpa-menu-a) | [systemone-decider-e4b-qp-menu-a](https://huggingface.co/mohameddhameem/systemone-decider-e4b-qp-menu-a) | [systemone-decider-e4b-qpa-menu-a](https://huggingface.co/mohameddhameem/systemone-decider-e4b-qpa-menu-a) |
 
 Both settings are trained and tested on the SLR split of HotpotQA's dev set: 4,814 training, 1,110 validation and 1,481
 test questions, lenient scoring, AgentTTS Table 5 prices. Each model card has its results, against the small model's
@@ -38,8 +43,8 @@ answerer = menu.answer(question, selection, branch, weak_answer=weak_answer)
 
 `passages` are "title: text" paragraphs in the order the weak model read them. A menu selection is the retriever's
 output, uncut: its "[k] title: text" references, after any "Query: … Selected references:" lines; the judge keeps what
-follows the first "Selected references:", as training did. Each Hub folder's `systemone.json` names its setting, input set and thresholds; seeds 1
-and 2 load with `subfolder="seed1"` or `"seed2"`. A menu folder holds three threshold rules, all chosen on validation:
+follows the first "Selected references:", as training did. Each Hub folder's `systemone.json` names its setting, input
+set and thresholds; seeds 1 and 2 load with `subfolder="seed1"` or `"seed2"`. A menu folder holds three threshold rules, all chosen on validation:
 `MenuRouter` uses `near_strong` (the cheapest point within 1% of always-strong's accuracy) unless given `rule="peak"`
 or `rule="parity"`, the SLR setup's own.
 
